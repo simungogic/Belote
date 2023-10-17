@@ -1,0 +1,2 @@
+# Belote
+Belote Game Project
