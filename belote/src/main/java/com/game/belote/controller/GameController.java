@@ -1,9 +1,13 @@
 package com.game.belote.controller;
 
+import com.game.belote.entity.Deck;
 import com.game.belote.entity.Game;
 import com.game.belote.entity.Player;
+import com.game.belote.response.GenericResponse;
 import com.game.belote.service.GameService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -29,11 +33,13 @@ public class GameController {
     @PostMapping("/game/{id}")
     public void joinGame(@RequestBody Player player,
                          @PathVariable UUID id) {
-        gameService.joinGame(player, id);
+        Game game = gameService.joinGame(player, id);
+
     }
 
     @PostMapping("/game/{id}/start")
-    public void startGame(@PathVariable UUID id) {
-        gameService.startGame(id);
+    public ResponseEntity<Game> startGame(@PathVariable UUID id) {
+        Game game = gameService.startGame(id);
+        return new ResponseEntity<>(game, HttpStatus.OK);
     }
 }
