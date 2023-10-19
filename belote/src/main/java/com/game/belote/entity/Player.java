@@ -1,6 +1,5 @@
 package com.game.belote.entity;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -14,7 +13,6 @@ import java.util.Objects;
 @ToString
 public class Player {
     private String name;
-    private boolean dealer;
     private List<Card> hand = new ArrayList<>();
 
     @Override

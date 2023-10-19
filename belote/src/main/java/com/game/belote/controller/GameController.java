@@ -1,13 +1,10 @@
 package com.game.belote.controller;
 
-import com.game.belote.entity.Deck;
 import com.game.belote.entity.Game;
 import com.game.belote.entity.Player;
-import com.game.belote.response.GenericResponse;
+import com.game.belote.entity.Suit;
 import com.game.belote.service.GameService;
 import lombok.AllArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -31,15 +28,25 @@ public class GameController {
     }
 
     @PostMapping("/game/{id}")
-    public void joinGame(@RequestBody Player player,
-                         @PathVariable UUID id) {
+    public Game joinGame(@PathVariable UUID id,
+                         @RequestBody Player player) {
         Game game = gameService.joinGame(player, id);
+        return game;
 
     }
 
     @PostMapping("/game/{id}/start")
-    public ResponseEntity<Game> startGame(@PathVariable UUID id) {
+    public Game startGame(@PathVariable UUID id) {
         Game game = gameService.startGame(id);
-        return new ResponseEntity<>(game, HttpStatus.OK);
+        return game;
+    }
+
+    @PostMapping("/game/{id}/{suit}")
+    public Game pickSuit(@PathVariable UUID id,
+                         @PathVariable Suit suit,
+                         @RequestBody Player player) {
+        Game game = gameService.getGames().get(id);
+        game.setSuit(suit);
+        return game;
     }
 }
