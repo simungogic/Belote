@@ -1,5 +1,6 @@
 package com.game.belote.controller;
 
+import com.game.belote.entity.Card;
 import com.game.belote.entity.Game;
 import com.game.belote.entity.Player;
 import com.game.belote.entity.Suit;
@@ -17,8 +18,8 @@ public class GameController {
 
     private GameService gameService;
 
-    @PostMapping("/game")
-    public void createGame(@RequestBody Player player) {
+    @PostMapping("/game/{player}")
+    public void createGame(@PathVariable String player) {
         gameService.createGame(player);
     }
 
@@ -27,26 +28,34 @@ public class GameController {
         return gameService.getGames();
     }
 
-    @PostMapping("/game/{id}")
+    @PostMapping("/game/{id}/{playerName}")
     public Game joinGame(@PathVariable UUID id,
-                         @RequestBody Player player) {
-        Game game = gameService.joinGame(player, id);
-        return game;
-
+                         @PathVariable String playerName) {
+        return gameService.joinGame(playerName, id);
     }
 
     @PostMapping("/game/{id}/start")
     public Game startGame(@PathVariable UUID id) {
-        Game game = gameService.startGame(id);
-        return game;
+        return gameService.startGame(id);
     }
 
-    @PostMapping("/game/{id}/{suit}")
+    @PostMapping("/game/{id}/{playerName}/suit")
+    public Game passSuit(@PathVariable UUID id,
+                         @PathVariable String playerName) {
+        return gameService.passSuit(playerName, id);
+    }
+
+    @PostMapping("/game/{id}/{playerName}/suit/{suit}")
     public Game pickSuit(@PathVariable UUID id,
-                         @PathVariable Suit suit,
-                         @RequestBody Player player) {
-        Game game = gameService.getGames().get(id);
-        game.setSuit(suit);
-        return game;
+                         @PathVariable String suit,
+                         @PathVariable String playerName) {
+        return gameService.pickSuit(playerName, suit, id);
+    }
+
+    @PostMapping("/game/{id}/{playerName}/throw")
+    public Card throwCard(@PathVariable UUID id,
+                          @PathVariable String playerName,
+                          @RequestBody Card card) {
+        return gameService.throwCard(playerName, card, id);
     }
 }
