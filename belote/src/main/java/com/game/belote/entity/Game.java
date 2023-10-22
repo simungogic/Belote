@@ -8,10 +8,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 @Getter
@@ -24,12 +21,14 @@ public class Game {
     private Player dealer;
     private Player turn;
     private Suit suit;
+    private List<HashMap<String, Card>> rounds;
     private List<Player> players;
 
     public Game() {
         players = new ArrayList<>(4);
         gameStatus = GameStatus.NEW;
         id = UUID.randomUUID();
+        rounds = new ArrayList<>(8);
     }
 
     @Autowired
@@ -84,8 +83,31 @@ public class Game {
         }
     }
 
+    private void printRounds() {
+        rounds.forEach(r -> {
+            System.out.println("%d. round:".formatted(rounds.indexOf(r)));
+            r.forEach((k, v) -> System.out.println("%s: %s".formatted(k, v.toString())));
+        });
+    }
+
     public void throwCard(Player player, Card card) {
-        player.getHand().remove(card);
-        getPlayers().forEach(p -> System.out.println(p.getHand()));
+        List<Card> hand = player.getHand();
+        Card cardThrown = hand.remove(hand.indexOf(card));
+        if(card == null)
+            throw new InternalException("Card %s has already been thrown...".formatted(card));
+        if(rounds.size() == 0) {
+            rounds.add(new HashMap<>(4));
+            rounds.get(0).put(player.getName(), cardThrown);
+        } else {
+            int round = rounds.size() - 1;
+            if(rounds.get(round).size() < 4)
+                rounds.get(round).put(player.getName(), cardThrown);
+            else {
+                rounds.add(new HashMap<>(4));
+                rounds.get(rounds.size() - 1).put(player.getName(), cardThrown);
+            }
+        }
+        getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
+        printRounds();
     }
 }

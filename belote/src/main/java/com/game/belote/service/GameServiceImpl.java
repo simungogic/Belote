@@ -103,7 +103,7 @@ public class GameServiceImpl implements GameService {
             game.setGameStatus(GameStatus.IN_PROGRESS);
             game.getDeck().shuffleDeck();
             game.deal();
-            game.getPlayers().forEach(p -> System.out.println(p.getName() + "'s hand: " + p.getHand()));
+            game.getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
             return game;
         }
         else

@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -14,10 +13,11 @@ import java.util.Objects;
 @ToString
 public class Player {
     private String name;
-    private List<Card> hand = new LinkedList<>();
+    private List<Card> hand;
 
     public Player(String name) {
         this.name = name;
+        this.hand = new LinkedList<>();
     }
 
     @Override
