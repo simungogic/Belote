@@ -63,7 +63,7 @@ public class GameServiceImpl implements GameService {
     }
 
     @Override
-    public Card throwCard(String playerName, Card card, UUID uuid) {
+    public Game throwCard(String playerName, Card card, UUID uuid) {
         Game game = games.get(uuid);
         Player player = new Player(playerName);
 
@@ -82,7 +82,7 @@ public class GameServiceImpl implements GameService {
         game.throwCard(player, cardObj);
         game.changeTurn();
 
-        return cardObj;
+        return game;
     }
 
     public Game joinGame(String playerName, UUID uuid) {

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @Getter
@@ -74,6 +75,7 @@ public class Game {
                     turn.addCardToHand(card);
                 else {
                     setFirstSixCardsToVisible();
+                    adjustFaceRank();
                     return;
                 }
 
@@ -83,6 +85,19 @@ public class Game {
         }
     }
 
+    private void adjustFaceRank() {
+        players.forEach(p -> {
+                    p.getHand().forEach(c -> {
+                        if(suit.equals(c.getSuit())) {
+                            if (Face.DEVET.equals(c.getFace()))
+                                c.setFaceRank(14);
+                            else if (Face.DEČKO.equals(c.getFace()))
+                                c.setFaceRank(20);
+                        }
+                    });
+                });
+    }
+
     private void printRounds() {
         rounds.forEach(r -> {
             System.out.println("%d. round:".formatted(rounds.indexOf(r)));
@@ -90,9 +105,34 @@ public class Game {
         });
     }
 
+    private boolean areAllCardsThrown() {
+        List<String> playerNames = players.stream()
+                .map(p -> p.getName())
+                .collect(Collectors.toList());
+        for(var round : rounds) {
+            boolean result = round.keySet().containsAll(playerNames);
+            if(!result)
+                return false;
+        }
+
+        for(var player : players) {
+            boolean result = player.getHand().size() == 0;
+            if(!result)
+                return false;
+        }
+
+        return true;
+    }
+
+    private void calculateResult() {
+        System.out.println("Calculating result...");
+    }
+
     public void throwCard(Player player, Card card) {
         List<Card> hand = player.getHand();
         Card cardThrown = hand.remove(hand.indexOf(card));
+        if(areAllCardsThrown())
+            throw new InternalException("All cards are already thrown...Game ended.");
         if(card == null)
             throw new InternalException("Card %s has already been thrown...".formatted(card));
         if(rounds.size() == 0) {
@@ -109,5 +149,7 @@ public class Game {
         }
         getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
         printRounds();
+        if(areAllCardsThrown())
+            calculateResult();
     }
 }
