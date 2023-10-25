@@ -6,8 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.stereotype.Service;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -62,6 +63,66 @@ public class GameServiceImpl implements GameService {
         return game;
     }
 
+    private boolean areAllCardsThrown(Game game) {
+        List<String> playerNames = game.getPlayers().stream()
+                .map(p -> p.getName())
+                .collect(Collectors.toList());
+        for(var round : game.getRounds()) {
+            boolean result = round.keySet().containsAll(playerNames);
+            if(!result)
+                return false;
+        }
+
+        for(var player : game.getPlayers()) {
+            boolean result = player.getHand().size() == 0;
+            if(!result)
+                return false;
+        }
+
+        return true;
+    }
+
+    private void calculateResult() {
+        System.out.println("Calculating result...");
+    }
+
+    private List<Card> validCardsToThrow(Player player, Card card, UUID uuid) {
+        Game game = games.get(uuid);
+        Suit chosenSuit = game.getSuit();
+        HashMap<String, Card> round = game.getRounds().get(game.getRounds().size() - 1);
+        List<Card> hand = game.getPlayers().get(game.getPlayers().indexOf(player)).getHand();
+
+        if(round.isEmpty())
+            return hand;
+        Suit firstCardSuit = round.get(0).getSuit();
+
+        //lista karata u istoj boji kao prva bačena karta
+        List<Card> sameColorCards = hand.stream()
+                .filter(c -> c.getSuit().equals(firstCardSuit))
+                .toList();
+
+        //najjača karta na stolu
+        round.values()
+                .stream()
+                .max(Comparator.comparing())
+
+        //profiltriraj jače karte u toj boji od onih na stolu
+        sameColorCards.stream()
+                .filter(c -> c.getFace().getRank() > )
+
+        //provjera da li je već bačen adut
+        boolean isChosenSuitThrown = round.values()
+                .stream()
+                .anyMatch(c -> chosenSuit.equals(c.getSuit()));
+
+        if(!sameColorCards.isEmpty() && !isChosenSuitThrown)
+
+
+
+
+
+    }
+
     @Override
     public Game throwCard(String playerName, Card card, UUID uuid) {
         Game game = games.get(uuid);
@@ -76,11 +137,16 @@ public class GameServiceImpl implements GameService {
         if(!game.getPlayers().get(game.getPlayers().indexOf(player)).getHand().contains(card))
             throw new InternalException("Player %s doesn't have %s card in hand[%s]".formatted(player.getName(), card,
                     game.getPlayers().get(game.getPlayers().indexOf(player)).getHand()));
+        if(areAllCardsThrown(game))
+            throw new InternalException("All cards are already thrown...Game ended.");
 
         player = game.getPlayers().get(game.getPlayers().indexOf(player));
         Card cardObj = player.getHand().get(player.getHand().indexOf(card));
         game.throwCard(player, cardObj);
         game.changeTurn();
+
+        if(areAllCardsThrown(game))
+            calculateResult();
 
         return game;
     }
