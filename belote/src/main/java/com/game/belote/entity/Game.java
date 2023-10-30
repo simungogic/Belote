@@ -247,7 +247,5 @@ public class Game {
         }
         getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
         printRounds();
-        if(areAllCardsThrown())
-            calculateResult();
     }
 }

@@ -6,8 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.stereotype.Service;
-import java.util.Map;
-import java.util.UUID;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -63,6 +64,29 @@ public class GameServiceImpl implements GameService {
         return game;
     }
 
+    private boolean areAllCardsThrown(Game game) {
+        List<String> playerNames = game.getPlayers().stream()
+                .map(p -> p.getName())
+                .collect(Collectors.toList());
+        for(var round : game.getRounds()) {
+            boolean result = round.keySet().containsAll(playerNames);
+            if(!result)
+                return false;
+        }
+
+        for(var player : game.getPlayers()) {
+            boolean result = player.getHand().size() == 0;
+            if(!result)
+                return false;
+        }
+
+        return true;
+    }
+
+    private void calculateResult() {
+        System.out.println("Calculating result...");
+    }
+
     @Override
     public Game throwCard(String playerName, Card card, UUID uuid) {
         Game game = games.get(uuid);
@@ -84,6 +108,9 @@ public class GameServiceImpl implements GameService {
         Card cardObj = player.getHand().get(player.getHand().indexOf(card));
         game.throwCard(player, cardObj);
         game.changeTurn();
+
+        if(areAllCardsThrown(game))
+            calculateResult();
 
         return game;
     }
