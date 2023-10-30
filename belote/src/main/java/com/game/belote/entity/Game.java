@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 @Getter
@@ -22,7 +22,7 @@ public class Game {
     private Player dealer;
     private Player turn;
     private Suit suit;
-    private List<HashMap<String, Card>> rounds;
+    private List<LinkedHashMap<String, Card>> rounds;
     private List<Player> players;
 
     public Game() {
@@ -75,7 +75,6 @@ public class Game {
                     turn.addCardToHand(card);
                 else {
                     setFirstSixCardsToVisible();
-                    adjustFaceRank();
                     return;
                 }
 
@@ -85,14 +84,18 @@ public class Game {
         }
     }
 
-    private void adjustFaceRank() {
+    public void adjustFaceValueAndRank() {
         players.forEach(p -> {
                     p.getHand().forEach(c -> {
                         if(suit.equals(c.getSuit())) {
-                            if (Face.DEVET.equals(c.getFace()))
-                                c.setFaceRank(14);
-                            else if (Face.DEČKO.equals(c.getFace()))
+                            if (Face.DEVET.equals(c.getFace())) {
+                                c.setFaceValue(14);
+                                c.setFaceRank(7);
+                            }
+                            else if (Face.DEČKO.equals(c.getFace())) {
+                                c.setFaceValue(8);
                                 c.setFaceRank(20);
+                            }
                         }
                     });
                 });
@@ -100,15 +103,15 @@ public class Game {
 
     private void printRounds() {
         rounds.forEach(r -> {
-            System.out.println("%d. round:".formatted(rounds.indexOf(r)));
-            r.forEach((k, v) -> System.out.println("%s: %s".formatted(k, v.toString())));
+            System.out.printf("%d. round:%n", rounds.indexOf(r));
+            r.forEach((k, v) -> System.out.printf("%s: %s%n", k, v.toString()));
         });
     }
 
-    private boolean areAllCardsThrown() {
+    public boolean areAllCardsThrown() {
         List<String> playerNames = players.stream()
-                .map(p -> p.getName())
-                .collect(Collectors.toList());
+                .map(Player::getName)
+                .toList();
         for(var round : rounds) {
             boolean result = round.keySet().containsAll(playerNames);
             if(!result)
@@ -128,23 +131,118 @@ public class Game {
         System.out.println("Calculating result...");
     }
 
+    private Card findMaxCardRankInRound(Collection<Card> cards) {
+        return cards.stream()
+                .max(Card::compareTo)
+                .get();
+    }
+
+    private List<Card> getSameSuitThrows(Player player, LinkedHashMap<String, Card> round) {
+        boolean isChosenSuitInCurrentRound = round.values().stream()
+                .anyMatch(c -> suit.equals(c.getSuit()));
+
+        Stream<Card> validCardsStream = player.getHand().stream()
+                .filter(c -> c.getSuit().equals(
+                        round.values().stream()
+                                .findFirst()
+                                .get().getSuit()));
+
+        if(isChosenSuitInCurrentRound)
+            return validCardsStream.toList();
+        else {
+            List<Card> cardsHigherThanCurrentMax = validCardsStream
+                    .filter(c -> c.getFace().getRank() > findMaxCardRankInRound(round.values()).getFace().getRank())
+                    .toList();
+            if(!cardsHigherThanCurrentMax.isEmpty())
+                return cardsHigherThanCurrentMax;
+
+            return player.getHand().stream()
+                    .filter(c -> c.getSuit().equals(
+                            round.values().stream()
+                                    .findFirst()
+                                    .get().getSuit()))
+                    .toList();
+        }
+    }
+
+    private List<Card> getChosenSuitThrows(Player player, LinkedHashMap<String, Card> round) {
+        boolean isChosenSuitInCurrentRound = round.values().stream()
+                .anyMatch(c -> suit.equals(c.getSuit()));
+
+        Stream<Card> chosenSuitCardsInHandStream = player.getHand().stream()
+                .filter(c -> suit.equals(c.getSuit()));
+
+        if(isChosenSuitInCurrentRound) {
+            Optional<Card> maxChosenSuitCardInRound = round.values().stream()
+                    .filter(c -> suit.equals(c.getSuit()))
+                    .max(Card::compareTo);
+
+            List<Card> cardsHigherThanCurrentMax = player.getHand().stream()
+                    .filter(c -> suit.equals(c.getSuit()))
+                    .filter(c -> c.getFace().getRank() > maxChosenSuitCardInRound.get().getFace().getRank())
+                    .toList();
+
+            if(!cardsHigherThanCurrentMax.isEmpty())
+                return cardsHigherThanCurrentMax;
+        }
+
+        return chosenSuitCardsInHandStream.toList();
+    }
+
+    private List<Card> getOtherSuitThrows(Player player, LinkedHashMap<String, Card> round) {
+        return player.getHand().stream()
+                .filter(c -> !suit.equals(c.getSuit()))
+                .filter(c -> !c.getSuit().equals(round.values().stream()
+                        .findFirst()
+                        .get()
+                        .getSuit()))
+                .toList();
+    }
+
+    public List<Card> getValidThrows(Player player, Card card) {
+        Player currentPlayer = players.get(players.indexOf(player));
+        LinkedHashMap<String, Card> currentRound = rounds.get(rounds.size() - 1);
+
+        //player contains card in hand with same suit as first card in round
+        boolean handContainsFirstCardSuit = currentPlayer.getHand().stream()
+                .anyMatch(c -> currentRound.values().stream()
+                        .findFirst()
+                        .get()
+                        .getSuit()
+                        .equals(c.getSuit()));
+
+        boolean handContainsChosenSuit = currentPlayer.getHand().stream()
+                .anyMatch(c -> suit.equals(c.getSuit()));
+
+        if(handContainsFirstCardSuit)
+            return getSameSuitThrows(currentPlayer, currentRound);
+        else if(handContainsChosenSuit)
+            return getChosenSuitThrows(currentPlayer, currentRound);
+        else
+            return getOtherSuitThrows(currentPlayer, currentRound);
+    }
+
     public void throwCard(Player player, Card card) {
         List<Card> hand = player.getHand();
-        Card cardThrown = hand.remove(hand.indexOf(card));
-        if(areAllCardsThrown())
-            throw new InternalException("All cards are already thrown...Game ended.");
-        if(card == null)
-            throw new InternalException("Card %s has already been thrown...".formatted(card));
+        Card cardThrown = hand.get(hand.indexOf(card));
         if(rounds.size() == 0) {
-            rounds.add(new HashMap<>(4));
+            rounds.add(new LinkedHashMap<>(4));
             rounds.get(0).put(player.getName(), cardThrown);
-        } else {
+        }
+        else {
             int round = rounds.size() - 1;
-            if(rounds.get(round).size() < 4)
-                rounds.get(round).put(player.getName(), cardThrown);
+            if(rounds.get(round).size() < 4) {
+                List<Card> validThrows = getValidThrows(player, card);
+                if(validThrows.contains(card)) {
+                    rounds.get(round).put(player.getName(), cardThrown);
+                    hand.remove(cardThrown);
+                }
+                else
+                    throw new InternalException("Card %s is not valid throw...".formatted(card));
+            }
             else {
-                rounds.add(new HashMap<>(4));
-                rounds.get(rounds.size() - 1).put(player.getName(), cardThrown);
+                rounds.add(new LinkedHashMap<>(4));
+                rounds.get(0).put(player.getName(), cardThrown);
             }
         }
         getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));

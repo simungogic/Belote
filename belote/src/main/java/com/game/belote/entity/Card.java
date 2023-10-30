@@ -2,11 +2,10 @@ package com.game.belote.entity;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-public class Card {
+public class Card implements Comparable<Card> {
     private Suit suit;
     private Face face;
     private boolean visible;
@@ -14,6 +13,10 @@ public class Card {
     public Card(Suit suit, Face face) {
         this.suit = suit;
         this.face = face;
+    }
+
+    public void setFaceValue(int rank) {
+        this.face.setValue(rank);
     }
 
     public void setFaceRank(int rank) {
@@ -34,5 +37,10 @@ public class Card {
 
         if (suit != card.suit) return false;
         return face == card.face;
+    }
+
+    @Override
+    public int compareTo(Card c) {
+        return Integer.compare(this.getFace().getRank(), c.getFace().getRank());
     }
 }

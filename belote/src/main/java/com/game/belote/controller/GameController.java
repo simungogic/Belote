@@ -4,6 +4,8 @@ import com.game.belote.entity.Card;
 import com.game.belote.entity.Game;
 import com.game.belote.service.GameService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -17,8 +19,8 @@ public class GameController {
     private GameService gameService;
 
     @PostMapping("/game/{player}")
-    public void createGame(@PathVariable String player) {
-        gameService.createGame(player);
+    public ResponseEntity<Game> createGame(@PathVariable String player) {
+        return new ResponseEntity<>(gameService.createGame(player), HttpStatus.OK);
     }
 
     @GetMapping("/game")

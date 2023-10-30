@@ -56,6 +56,7 @@ public class GameServiceImpl implements GameService {
         if(!player.equals(game.getTurn()))
             throw new InternalException("Player %s is not on turn...".formatted(player.getName()));
         game.setSuit(Suit.valueOf(suit.toUpperCase()));
+        game.adjustFaceValueAndRank();
         game.setLastTwoCardsToVisible();
         game.resetTurn();
 
@@ -76,6 +77,8 @@ public class GameServiceImpl implements GameService {
         if(!game.getPlayers().get(game.getPlayers().indexOf(player)).getHand().contains(card))
             throw new InternalException("Player %s doesn't have %s card in hand[%s]".formatted(player.getName(), card,
                     game.getPlayers().get(game.getPlayers().indexOf(player)).getHand()));
+        if(game.areAllCardsThrown())
+            throw new InternalException("All cards are already thrown...Game ended.");
 
         player = game.getPlayers().get(game.getPlayers().indexOf(player));
         Card cardObj = player.getHand().get(player.getHand().indexOf(card));
