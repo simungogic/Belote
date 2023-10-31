@@ -43,6 +43,10 @@ public class Game {
         players.add(player);
     }
 
+    public List<Player> getClonedPlayers() {
+        return new ArrayList<>(players);
+    }
+
     private void setFirstSixCardsToVisible() {
         players.forEach(p -> p.getHand().subList(0, 6)
                 .forEach(c -> c.setVisible(true)));
@@ -84,30 +88,33 @@ public class Game {
         }
     }
 
-    public void adjustFaceValueAndRank() {
-        System.out.println("Chosen suit: " + suit);
-        System.out.println("-".repeat(60));
+    public void adjustValueAndRank() {
         players.forEach(p -> {
-            System.out.println("Player " + p.getName());
-                    p.getHand().forEach(c -> {
-                        if(suit.equals(c.getSuit()) && Face.DEVET.equals(c.getFace())) {
-                                System.out.println("card " + c);
-                                //c.setFaceValue(14);
-                                //c.setFaceRank(7);
+            p.getHand().forEach(c -> {
+                if(suit.equals(c.getSuit())) {
+                    switch (c.getFace()) {
+                        case DAMA -> c.setRank(3);
+                        case KRALJ -> c.setRank(4);
+                        case DESET -> c.setRank(5);
+                        case AS -> c.setRank(6);
+                        case DEVET -> {
+                            c.setRank(7);
+                            c.setValue(14);
                         }
-                        else if(suit.equals(c.getSuit()) && Face.DEČKO.equals(c.getFace())) {
-                            System.out.println("card " + c);
-                            //c.setFaceValue(20);
-                            //c.setFaceRank(8);
+                        case DEČKO -> {
+                            c.setRank(8);
+                            c.setValue(20);
                         }
-                    });
-                });
+                    }
+                }
+            });
+        });
     }
 
     private void printRounds() {
         rounds.forEach(r -> {
-            System.out.printf("%d. round:%n", rounds.indexOf(r));
-            r.forEach((k, v) -> System.out.printf("%s: %s%n", k, v.toString(), v.getFace().getRank()));
+            System.out.printf("%d. round:%n", rounds.indexOf(r) + 1);
+            r.forEach((k, v) -> System.out.printf("%s: %s%n", k, v.toString(), v.getRank()));
         });
     }
 
@@ -152,11 +159,11 @@ public class Game {
                                 .findFirst()
                                 .get().getSuit()));
 
-        if(isChosenSuitInCurrentRound)
+        if(isChosenSuitInCurrentRound && !round.values().stream().findFirst().get().getSuit().equals(suit))
             return validCardsStream.toList();
         else {
             List<Card> cardsHigherThanCurrentMax = validCardsStream
-                    .filter(c -> c.getFace().getRank() > findMaxCardRankInRound(round.values()).getFace().getRank())
+                    .filter(c -> c.getRank() > findMaxCardRankInRound(round.values()).getRank())
                     .toList();
             if(!cardsHigherThanCurrentMax.isEmpty())
                 return cardsHigherThanCurrentMax;
@@ -184,7 +191,7 @@ public class Game {
 
             List<Card> cardsHigherThanCurrentMax = player.getHand().stream()
                     .filter(c -> suit.equals(c.getSuit()))
-                    .filter(c -> c.getFace().getRank() > maxChosenSuitCardInRound.get().getFace().getRank())
+                    .filter(c -> c.getRank() > maxChosenSuitCardInRound.get().getRank())
                     .toList();
 
             if(!cardsHigherThanCurrentMax.isEmpty())
@@ -236,11 +243,10 @@ public class Game {
             hand.remove(cardThrown);
         }
         else {
-            int round = rounds.size() - 1;
-            if(rounds.get(round).size() < 4) {
+            if(rounds.get(rounds.size() - 1).size() < 4) {
                 List<Card> validThrows = getValidThrows(player, card);
                 if(validThrows.contains(card)) {
-                    rounds.get(round).put(player.getName(), cardThrown);
+                    rounds.get(rounds.size() - 1).put(player.getName(), cardThrown);
                     hand.remove(cardThrown);
                 }
                 else
@@ -248,7 +254,7 @@ public class Game {
             }
             else {
                 rounds.add(new LinkedHashMap<>(4));
-                rounds.get(0).put(player.getName(), cardThrown);
+                rounds.get(rounds.size() - 1).put(player.getName(), cardThrown);
                 hand.remove(cardThrown);
             }
         }

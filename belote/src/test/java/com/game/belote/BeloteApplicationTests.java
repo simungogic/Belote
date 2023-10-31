@@ -4,18 +4,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.game.belote.entity.Card;
 import com.game.belote.entity.Game;
+import com.game.belote.entity.Player;
 import com.game.belote.entity.Suit;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import jakarta.annotation.PostConstruct;
-import jdk.jshell.spi.ExecutionControl;
 import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.io.DataInput;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -95,6 +94,7 @@ class BeloteApplicationTests {
 		RequestSpecification request = RestAssured.given();
 		ObjectMapper objectMapper = new ObjectMapper();
 		Game game = objectMapper.readValue(response.getBody().asString(), Game.class);
+		List<Player> players = game.getClonedPlayers();
 		String playerNameOnTurn = game.getTurn().getName();
 		Card randomCardFromHand = game.getTurn().getHand().get(new Random().nextInt(game.getTurn().getHand().size()));
 		System.out.println("Player %s tried to throw %s".formatted(playerNameOnTurn, randomCardFromHand));
@@ -102,8 +102,8 @@ class BeloteApplicationTests {
 		requestParams.put("suit", randomCardFromHand.getSuit());
 		requestParams.put("face", randomCardFromHand.getFace());
 		request.body(requestParams);
-		boolean finished = false;
-		while(!finished) {
+		boolean allCardsThrown = false;
+		while(!allCardsThrown) {
 			System.out.println("chosen suit: " + game.getSuit());
 			requestParams = new JSONObject();
 			requestParams.put("suit", randomCardFromHand.getSuit());
@@ -121,11 +121,14 @@ class BeloteApplicationTests {
 			}
 			finally {
 				playerNameOnTurn = game.getTurn().getName();
-				randomCardFromHand = game.getTurn().getHand().get(new Random().nextInt(game.getTurn().getHand().size()));
-				finished = game.getRounds().stream()
-						.allMatch(r -> r.values().size() == 4);
-				System.out.println(response.asString());
+				if(game.getTurn().getHand().size() != 0)
+					randomCardFromHand = game.getTurn().getHand().get(new Random().nextInt(game.getTurn().getHand().size()));
+				allCardsThrown = game.getRounds().stream()
+						.map(HashMap::size)
+						.reduce(0, Integer::sum)
+						.equals(32);
 			}
+			System.out.println(players);
 		}
 	}
 }

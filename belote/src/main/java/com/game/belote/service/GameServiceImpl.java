@@ -7,8 +7,9 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 @AllArgsConstructor
@@ -57,7 +58,7 @@ public class GameServiceImpl implements GameService {
         if(!player.equals(game.getTurn()))
             throw new InternalException("Player %s is not on turn...".formatted(player.getName()));
         game.setSuit(Suit.valueOf(suit.toUpperCase()));
-        game.adjustFaceValueAndRank();
+        game.adjustValueAndRank();
         game.setLastTwoCardsToVisible();
         game.resetTurn();
 
@@ -66,8 +67,8 @@ public class GameServiceImpl implements GameService {
 
     private boolean areAllCardsThrown(Game game) {
         List<String> playerNames = game.getPlayers().stream()
-                .map(p -> p.getName())
-                .collect(Collectors.toList());
+                .map(Player::getName)
+                .toList();
         for(var round : game.getRounds()) {
             boolean result = round.keySet().containsAll(playerNames);
             if(!result)

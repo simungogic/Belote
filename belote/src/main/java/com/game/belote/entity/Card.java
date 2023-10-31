@@ -9,6 +9,8 @@ public class Card implements Comparable<Card> {
     private Suit suit;
     private Face face;
     private boolean visible;
+    private int value;
+    private int rank;
 
     public Card() {
     }
@@ -21,19 +23,39 @@ public class Card implements Comparable<Card> {
         this.suit = suit;
         this.face = face;
         this.visible = visible;
+        this.rank = generateRank(face);
+        this.value = generateValue(face);
     }
 
-    public void setFaceValue(int rank) {
-        this.face.setValue(rank);
+    private int generateRank(Face face) {
+        switch (face) {
+            case SEDAM: return 1;
+            case OSAM: return 2;
+            case DEVET: return 3;
+            case DEČKO: return 4;
+            case DAMA: return 5;
+            case KRALJ: return 6;
+            case DESET: return 7;
+            case AS: return 8;
+            default: return 0;
+        }
     }
 
-    public void setFaceRank(int rank) {
-        this.face.setRank(rank);
+    private int generateValue(Face face) {
+        switch (face) {
+            case SEDAM, OSAM, DEVET: return 0;
+            case DEČKO: return 2;
+            case DAMA: return 3;
+            case KRALJ: return 4;
+            case DESET: return 10;
+            case AS: return 11;
+            default: return 0;
+        }
     }
 
     @Override
     public String toString() {
-        return "%s %s(%s)".formatted(suit.name(), face.name(), face.getRank());
+        return "%s %s(%s)".formatted(suit.name(), face.name(), getRank());
     }
 
     @Override
@@ -49,6 +71,6 @@ public class Card implements Comparable<Card> {
 
     @Override
     public int compareTo(Card c) {
-        return Integer.compare(c.getFace().getRank(), this.getFace().getRank());
+        return Integer.compare(getRank(), c.getRank());
     }
 }
