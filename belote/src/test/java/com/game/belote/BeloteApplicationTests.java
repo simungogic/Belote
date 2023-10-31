@@ -1,17 +1,22 @@
 package com.game.belote;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.game.belote.entity.Card;
+import com.game.belote.entity.Game;
+import com.game.belote.entity.Suit;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import jakarta.annotation.PostConstruct;
+import jdk.jshell.spi.ExecutionControl;
+import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.DataInput;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,11 +28,7 @@ class BeloteApplicationTests {
 	}
 
 	@Test
-	void contextLoads() {
-	}
-
-	@Test
-	void end2end() {
+	void setupGame() throws JsonProcessingException {
 		LinkedList<String> playerNames = new LinkedList<>(List.of("Marko", "Nenad", "Igor", "Petar"));
 		Collections.shuffle(playerNames);
 
@@ -40,7 +41,7 @@ class BeloteApplicationTests {
 		System.out.println(response.asString());
 		assertTrue(response.getStatusCode() == 200);
 		jsonPath = response.jsonPath();
-		String gameId = jsonPath.get("id");
+		String gameId = jsonPath.getString("id");
 
 		//joining rest of the players to game with game id
 		for(int i = 1; i < playerNames.size(); i++) {
@@ -51,30 +52,79 @@ class BeloteApplicationTests {
 
 		//starting the game
 		response = request.post("/%s/start".formatted(gameId));
+		jsonPath = response.jsonPath();
 		System.out.println(response.asString());
 		assertTrue(response.getStatusCode() == 200);
 
-		//get turn and second one pick the suit
-		jsonPath = response.jsonPath();
-		String playerNameOnTurn = jsonPath.get("turn.name");
-		response = request.post("/%s/%s/suit".formatted(gameId, playerNameOnTurn));
-		jsonPath = response.jsonPath();
-		assertTrue(response.getStatusCode() == 200);
-		assertTrue(jsonPath.get("suit") == null);
-		response = request.post("/%s/%s/suit/crvena".formatted(gameId, playerNames.get(playerNames.indexOf(playerNameOnTurn) + 1)));
-		jsonPath = response.jsonPath();
-		assertTrue(jsonPath.getString("suit").equals("CRVENA"));
-		System.out.println(response.asString());
+		//randomly pick name and choose suit
+		response = randomlyChooseSuit(gameId, playerNames, jsonPath);
+		System.out.println("Player %s is on turn to throw the first card...".formatted(jsonPath.getString("turn.name")));
 
-		//throwing cards
-		playerNameOnTurn = jsonPath.get("turn.name");
-		Iterator<String> playerNameIterator = playerNames.listIterator(playerNames.indexOf(playerNameOnTurn));
-		while(playerNameIterator.hasNext()) {
-			String playerName = playerNameIterator.next();
-			response = request.post("/%s/%s/suit/crvena".formatted(gameId, playerNames.get(playerNames.indexOf(playerNameOnTurn) + 1)));
+		//start throwing cards
+		throwCards(response);
+	}
 
-			if(!playerNameIterator.hasNext()) {
-				playerNameIterator = playerNames.listIterator();
+	private Response randomlyChooseSuit(String gameId, LinkedList<String> playerNames, JsonPath jsonPath) {
+		//randomly pick name and choose suit
+		RequestSpecification request = RestAssured.given();
+		Response response = null;
+		String randomPlayerToChooseSuit = playerNames.get(new Random().nextInt(4));
+		System.out.println("Randomly chosen player to pick the suit is %s".formatted(randomPlayerToChooseSuit));
+		String playerNameOnTurn = jsonPath.getString("turn.name");
+		System.out.println("First player on turn to pick the suit is %s".formatted(playerNameOnTurn));
+		while(!playerNameOnTurn.equals(randomPlayerToChooseSuit)) {
+			System.out.println("Game %s: Player %s skipped choosing the suit".formatted(gameId, playerNameOnTurn));
+			response = request.post("/%s/%s/suit".formatted(gameId, playerNameOnTurn));
+			jsonPath = response.jsonPath();
+			assertTrue(response.getStatusCode() == 200);
+			assertTrue(jsonPath.getString("suit") == null);
+			playerNameOnTurn = jsonPath.getString("turn.name");
+		}
+		if(playerNameOnTurn.equals(randomPlayerToChooseSuit)) {
+			String chosenSuit = Suit.randomSuit().name();
+			response = request.post("/%s/%s/suit/%s".formatted(gameId, playerNameOnTurn, chosenSuit));
+			jsonPath = response.jsonPath();
+			assertTrue(jsonPath.getString("suit").equals(chosenSuit));
+			System.out.println("Game %s: Player %s chose %s".formatted(gameId, playerNameOnTurn, chosenSuit));
+		}
+
+		return response;
+	}
+
+	private void throwCards(Response response) throws JsonProcessingException {
+		RequestSpecification request = RestAssured.given();
+		ObjectMapper objectMapper = new ObjectMapper();
+		Game game = objectMapper.readValue(response.getBody().asString(), Game.class);
+		String playerNameOnTurn = game.getTurn().getName();
+		Card randomCardFromHand = game.getTurn().getHand().get(new Random().nextInt(game.getTurn().getHand().size()));
+		System.out.println("Player %s tried to throw %s".formatted(playerNameOnTurn, randomCardFromHand));
+		JSONObject requestParams = new JSONObject();
+		requestParams.put("suit", randomCardFromHand.getSuit());
+		requestParams.put("face", randomCardFromHand.getFace());
+		request.body(requestParams);
+		boolean finished = false;
+		while(!finished) {
+			System.out.println("chosen suit: " + game.getSuit());
+			requestParams = new JSONObject();
+			requestParams.put("suit", randomCardFromHand.getSuit());
+			requestParams.put("face", randomCardFromHand.getFace());
+			request.body(requestParams);
+			response = request
+					.contentType("application/json")
+					.post("/%s/%s/throw".formatted(game.getId(), playerNameOnTurn));
+			objectMapper = new ObjectMapper();
+			try {
+				game = objectMapper.readValue(response.getBody().asString(), Game.class);
+			}
+			catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			finally {
+				playerNameOnTurn = game.getTurn().getName();
+				randomCardFromHand = game.getTurn().getHand().get(new Random().nextInt(game.getTurn().getHand().size()));
+				finished = game.getRounds().stream()
+						.allMatch(r -> r.values().size() == 4);
+				System.out.println(response.asString());
 			}
 		}
 	}

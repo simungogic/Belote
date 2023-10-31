@@ -129,14 +129,20 @@ public class GameServiceImpl implements GameService {
 
     public Game startGame(UUID id) {
         Game game = games.get(id);
-        if(game.getPlayers().size() == 4) {
-            game.setGameStatus(GameStatus.IN_PROGRESS);
-            game.getDeck().shuffleDeck();
-            game.deal();
-            game.getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
-            return game;
+        if(game.getGameStatus().equals(GameStatus.NEW)) {
+            if(game.getPlayers().size() == 4) {
+                game.setGameStatus(GameStatus.IN_PROGRESS);
+                game.getDeck().shuffleDeck();
+                game.deal();
+                game.getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
+                return game;
+            }
+            else
+                throw new InternalException("Not enough players joined the game %s...".formatted(id));
         }
+        else if(game.getGameStatus().equals(GameStatus.IN_PROGRESS))
+            throw new InternalException("Game %s is already in progress...".formatted(id));
         else
-            throw new InternalException("Not enough players joined the game...");
+            throw new InternalException("Game %s is already finished...".formatted(id));
     }
 }

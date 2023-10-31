@@ -15,9 +15,16 @@ public class Player {
     private String name;
     private List<Card> hand;
 
+    public Player() {
+    }
+
     public Player(String name) {
+        this(name, new LinkedList<>());
+    }
+
+    public Player(String name, List<Card> hand) {
         this.name = name;
-        this.hand = new LinkedList<>();
+        this.hand = hand;
     }
 
     @Override

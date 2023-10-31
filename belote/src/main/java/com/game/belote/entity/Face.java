@@ -1,5 +1,8 @@
 package com.game.belote.entity;
 
+import lombok.ToString;
+
+@ToString
 public enum Face {
     SEDAM(1, 0),
     OSAM(2, 0),

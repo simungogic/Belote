@@ -10,9 +10,17 @@ public class Card implements Comparable<Card> {
     private Face face;
     private boolean visible;
 
+    public Card() {
+    }
+
     public Card(Suit suit, Face face) {
+        this(suit, face, false);
+    }
+
+    public Card(Suit suit, Face face, boolean visible) {
         this.suit = suit;
         this.face = face;
+        this.visible = visible;
     }
 
     public void setFaceValue(int rank) {
@@ -25,7 +33,7 @@ public class Card implements Comparable<Card> {
 
     @Override
     public String toString() {
-        return "%s %s".formatted(suit.name(), face.name());
+        return "%s %s(%s)".formatted(suit.name(), face.name(), face.getRank());
     }
 
     @Override
@@ -41,6 +49,6 @@ public class Card implements Comparable<Card> {
 
     @Override
     public int compareTo(Card c) {
-        return Integer.compare(this.getFace().getRank(), c.getFace().getRank());
+        return Integer.compare(c.getFace().getRank(), this.getFace().getRank());
     }
 }

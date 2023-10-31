@@ -85,17 +85,20 @@ public class Game {
     }
 
     public void adjustFaceValueAndRank() {
+        System.out.println("Chosen suit: " + suit);
+        System.out.println("-".repeat(60));
         players.forEach(p -> {
+            System.out.println("Player " + p.getName());
                     p.getHand().forEach(c -> {
-                        if(suit.equals(c.getSuit())) {
-                            if (Face.DEVET.equals(c.getFace())) {
-                                c.setFaceValue(14);
-                                c.setFaceRank(7);
-                            }
-                            else if (Face.DEČKO.equals(c.getFace())) {
-                                c.setFaceValue(8);
-                                c.setFaceRank(20);
-                            }
+                        if(suit.equals(c.getSuit()) && Face.DEVET.equals(c.getFace())) {
+                                System.out.println("card " + c);
+                                //c.setFaceValue(14);
+                                //c.setFaceRank(7);
+                        }
+                        else if(suit.equals(c.getSuit()) && Face.DEČKO.equals(c.getFace())) {
+                            System.out.println("card " + c);
+                            //c.setFaceValue(20);
+                            //c.setFaceRank(8);
                         }
                     });
                 });
@@ -104,7 +107,7 @@ public class Game {
     private void printRounds() {
         rounds.forEach(r -> {
             System.out.printf("%d. round:%n", rounds.indexOf(r));
-            r.forEach((k, v) -> System.out.printf("%s: %s%n", k, v.toString()));
+            r.forEach((k, v) -> System.out.printf("%s: %s%n", k, v.toString(), v.getFace().getRank()));
         });
     }
 
@@ -132,9 +135,11 @@ public class Game {
     }
 
     private Card findMaxCardRankInRound(Collection<Card> cards) {
-        return cards.stream()
+        Card max = cards.stream()
                 .max(Card::compareTo)
                 .get();
+        System.out.println("Max rank card in round: " + max);
+        return max;
     }
 
     private List<Card> getSameSuitThrows(Player player, LinkedHashMap<String, Card> round) {
@@ -228,6 +233,7 @@ public class Game {
         if(rounds.size() == 0) {
             rounds.add(new LinkedHashMap<>(4));
             rounds.get(0).put(player.getName(), cardThrown);
+            hand.remove(cardThrown);
         }
         else {
             int round = rounds.size() - 1;
@@ -243,9 +249,24 @@ public class Game {
             else {
                 rounds.add(new LinkedHashMap<>(4));
                 rounds.get(0).put(player.getName(), cardThrown);
+                hand.remove(cardThrown);
             }
         }
-        getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
+        getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted(p.getName(), p.getHand())));
         printRounds();
+    }
+
+    @Override
+    public String toString() {
+        return "Game{" +
+                "id=" + id +
+                ", gameStatus=" + gameStatus +
+                ", deck=" + deck +
+                ", dealer=" + dealer +
+                ", turn=" + turn +
+                ", suit=" + suit +
+                ", rounds=" + rounds +
+                ", players=" + players +
+                '}';
     }
 }

@@ -5,6 +5,7 @@ import com.game.belote.entity.Game;
 import com.game.belote.service.GameService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,10 +47,10 @@ public class GameController {
     }
 
     @PostMapping("/game/{id}/{playerName}/suit/{suit}")
-    public Game pickSuit(@PathVariable UUID id,
+    public ResponseEntity<Game> pickSuit(@PathVariable UUID id,
                          @PathVariable String suit,
                          @PathVariable String playerName) {
-        return gameService.pickSuit(playerName, suit, id);
+        return new ResponseEntity<>(gameService.pickSuit(playerName, suit, id), HttpStatusCode.valueOf(200));
     }
 
     @PostMapping("/game/{id}/{playerName}/throw")
