@@ -22,7 +22,7 @@ public class Game {
     private Player dealer;
     private Player turn;
     private Suit suit;
-    private List<LinkedHashMap<String, Card>> rounds;
+    private List<Map<String, Card>> rounds;
     private List<Player> players;
 
     public Game() {
@@ -149,7 +149,7 @@ public class Game {
         return max;
     }
 
-    private List<Card> getSameSuitThrows(Player player, LinkedHashMap<String, Card> round) {
+    private List<Card> getSameSuitThrows(Player player, Map<String, Card> round) {
         boolean isChosenSuitInCurrentRound = round.values().stream()
                 .anyMatch(c -> suit.equals(c.getSuit()));
 
@@ -177,7 +177,7 @@ public class Game {
         }
     }
 
-    private List<Card> getChosenSuitThrows(Player player, LinkedHashMap<String, Card> round) {
+    private List<Card> getChosenSuitThrows(Player player, Map<String, Card> round) {
         boolean isChosenSuitInCurrentRound = round.values().stream()
                 .anyMatch(c -> suit.equals(c.getSuit()));
 
@@ -201,7 +201,7 @@ public class Game {
         return chosenSuitCardsInHandStream.toList();
     }
 
-    private List<Card> getOtherSuitThrows(Player player, LinkedHashMap<String, Card> round) {
+    private List<Card> getOtherSuitThrows(Player player, Map<String, Card> round) {
         return player.getHand().stream()
                 .filter(c -> !suit.equals(c.getSuit()))
                 .filter(c -> !c.getSuit().equals(round.values().stream()
@@ -213,7 +213,7 @@ public class Game {
 
     public List<Card> getValidThrows(Player player, Card card) {
         Player currentPlayer = players.get(players.indexOf(player));
-        LinkedHashMap<String, Card> currentRound = rounds.get(rounds.size() - 1);
+        Map<String, Card> currentRound = rounds.get(rounds.size() - 1);
 
         //player contains card in hand with same suit as first card in round
         boolean handContainsFirstCardSuit = currentPlayer.getHand().stream()
