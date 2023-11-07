@@ -7,8 +7,8 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -65,25 +65,6 @@ public class GameServiceImpl implements GameService {
         return game;
     }
 
-    private boolean areAllCardsThrown(Game game) {
-        List<String> playerNames = game.getPlayers().stream()
-                .map(Player::getName)
-                .toList();
-        for(var round : game.getRounds()) {
-            boolean result = round.keySet().containsAll(playerNames);
-            if(!result)
-                return false;
-        }
-
-        for(var player : game.getPlayers()) {
-            boolean result = player.getHand().size() == 0;
-            if(!result)
-                return false;
-        }
-
-        return true;
-    }
-
     private void calculateResult() {
         System.out.println("Calculating result...");
     }
@@ -107,11 +88,13 @@ public class GameServiceImpl implements GameService {
 
         player = game.getPlayers().get(game.getPlayers().indexOf(player));
         Card cardObj = player.getHand().get(player.getHand().indexOf(card));
-        game.throwCard(player, cardObj);
-        game.changeTurn();
-
-        if(areAllCardsThrown(game))
-            calculateResult();
+        try {
+            Optional<Player> roundWinnerPlayer = game.throwCard(player, cardObj);
+            if (roundWinnerPlayer.isEmpty() && !game.areAllCardsThrown())
+                game.changeTurn();
+            else if(!game.areAllCardsThrown())
+                game.changeTurn(roundWinnerPlayer.get());
+        }catch (InternalException exception) {}
 
         return game;
     }
@@ -135,6 +118,7 @@ public class GameServiceImpl implements GameService {
                 game.setGameStatus(GameStatus.IN_PROGRESS);
                 game.getDeck().shuffleDeck();
                 game.deal();
+                System.out.println("-".repeat(300));
                 game.getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
                 return game;
             }

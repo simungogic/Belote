@@ -55,7 +55,7 @@ public class Card implements Comparable<Card> {
 
     @Override
     public String toString() {
-        return "%s %s(%s)".formatted(suit.name(), face.name(), getRank());
+        return "%s %s(r:%s)(v:%s)".formatted(suit.name(), face.name(), getRank(), getValue());
     }
 
     @Override
