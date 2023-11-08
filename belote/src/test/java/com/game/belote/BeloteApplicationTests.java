@@ -64,11 +64,11 @@ class BeloteApplicationTests {
   	%s/%-10s%s/%-10s
   	%-10d%10d
 			""".formatted(playerNames.get(0),
-				playerNames.get(1),
 				playerNames.get(2),
+				playerNames.get(1),
 				playerNames.get(3),
-				game.getTeamSums()[0],
-				game.getTeamSums()[1]));
+				game.getTeamSums().get("team1"),
+				game.getTeamSums().get("team2")));
 
 		//game.getPlayers().forEach(p -> System.out.printf("%s's hand: %s%n", p.getName(), p.getHand()));
 	}
@@ -134,5 +134,41 @@ class BeloteApplicationTests {
 		}
 
 		return game;
+	}
+
+	@Test
+	public void getBonusTest() throws JsonProcessingException {
+		LinkedList<String> playerNames = new LinkedList<>(List.of("Marko", "Nenad", "Igor", "Petar"));
+		Collections.shuffle(playerNames);
+
+		RequestSpecification request = RestAssured.given();
+		Response response;
+		JsonPath jsonPath;
+
+		//creating game with first name from playerNames list
+		response = request.post("/%s".formatted(playerNames.get(0)));
+		//System.out.println(response.asString());
+		assertTrue(response.getStatusCode() == 200);
+		jsonPath = response.jsonPath();
+		String gameId = jsonPath.getString("id");
+
+		//joining rest of the players to game with game id
+		for(int i = 1; i < playerNames.size(); i++) {
+			response = request.post("/%s/%s".formatted(gameId, playerNames.get(i)));
+			//System.out.println(response.asString());
+			assertTrue(response.getStatusCode() == 200);
+		}
+
+		//starting the game
+		response = request.post("/%s/start".formatted(gameId));
+		jsonPath = response.jsonPath();
+		//System.out.println(response.asString());
+		assertTrue(response.getStatusCode() == 200);
+
+		//randomly pick name and choose suit
+		Game game = randomlyChooseSuit(gameId, playerNames, jsonPath);
+
+		game.calculateBonus(game.getPlayers().get(0).getHand());
+
 	}
 }

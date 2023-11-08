@@ -10,7 +10,10 @@ import org.springframework.stereotype.Component;
 import wniemiec.util.data.Pair;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.groupingBy;
 
 @Component
 @Getter
@@ -24,7 +27,8 @@ public class Game {
     private Player turn;
     private Suit suit;
     private List<Map<String, Card>> rounds;
-    private Integer[] teamSums;
+    private Map<String, Integer> teamSums;
+    private Map<String, List<Player>> teams;
     private List<Player> players;
 
     public Game() {
@@ -32,12 +36,31 @@ public class Game {
         gameStatus = GameStatus.NEW;
         id = UUID.randomUUID();
         rounds = new ArrayList<>(8);
-        teamSums = new Integer[]{0, 0};
+        teams = new HashMap<>(2);
+        teamSums = new HashMap<>(2);
     }
 
     @Autowired
     public void setDeck(Deck deck) {
         this.deck = deck;
+    }
+
+    public void setUpTeams() {
+        //set teams
+        List<Player> team1 = new ArrayList<>(2);
+        team1.add(players.get(0));
+        team1.add(players.get(2));
+
+        List<Player> team2 = new ArrayList<>(2);
+        team2.add(players.get(1));
+        team2.add(players.get(3));
+
+        teams.put("team1", team1);
+        teams.put("team2", team2);
+
+        //set team results
+        teamSums.put("team1", 0);
+        teamSums.put("team2", 0);
     }
 
     public void addPlayer(Player player) {
@@ -152,10 +175,6 @@ public class Game {
         }
 
         return true;
-    }
-
-    private void calculateResult() {
-        System.out.println("Calculating result...");
     }
 
     private Card findMaxCardRankInRound(Collection<Card> cards) {
@@ -293,10 +312,15 @@ public class Game {
     }
 
     private void addPointsToTeamSum(Player roundWinnerPlayer, Integer roundWinnerPoints) {
-        if(players.indexOf(roundWinnerPlayer) == 0 || players.indexOf(roundWinnerPlayer) == 1)
-            teamSums[0] += roundWinnerPoints;
-        else if(players.indexOf(roundWinnerPlayer) == 2 || players.indexOf(roundWinnerPlayer) == 3)
-            teamSums[1] += roundWinnerPoints;
+        for(Map.Entry<String, List<Player>> team : teams.entrySet()) {
+            boolean isRoundWinnerInCurrentTeam = team.getValue().contains(roundWinnerPlayer);
+            if(isRoundWinnerInCurrentTeam) {
+                teamSums.merge(team.getKey(), roundWinnerPoints, Integer::sum);
+                //check if last round
+                if(rounds.size() == 8)
+                    teamSums.merge(team.getKey(), 10, Integer::sum);
+            }
+        }
     }
 
     private Player findPlayerByCardInRound(Card card, Map<String, Card> round) {
@@ -348,6 +372,16 @@ public class Game {
 
         roundWinnerPlayer = findPlayerByCardInRound(sameSuitCardWithMaxRank, lastRound);
         return new Pair<>(roundWinnerPlayer, roundWinnerPoints);
+    }
+
+    private Map<Face, Long> getFourOfKindBonusCards(List<Card> cards) {
+        //get four of kind cards(DEČKO, DEVET, AS, DESET, DAMA)
+        return cards.stream()
+                .collect(groupingBy(Card::getFace, Collectors.counting()));
+    }
+
+    public List<Card> calculateBonus(List<Card> cards) {
+
     }
 
     @Override

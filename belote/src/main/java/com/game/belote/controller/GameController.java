@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -58,5 +59,12 @@ public class GameController {
                           @PathVariable String playerName,
                           @RequestBody Card card) {
         return gameService.throwCard(playerName, card, id);
+    }
+
+    @PostMapping("/game/{id}/{playerName}/bonus")
+    public Game getBonus(@PathVariable UUID id,
+                          @PathVariable String playerName,
+                          @RequestBody List<Card> cards) {
+        return gameService.getBonus(playerName, cards, id);
     }
 }

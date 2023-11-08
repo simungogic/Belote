@@ -7,6 +7,7 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Lookup;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +27,8 @@ public class GameServiceImpl implements GameService {
         Game game = getGame();
         game.addPlayer(new Player(playerName));
         games.put(game.getId(), game);
+        System.out.println("-".repeat(300));
+        System.out.println("%s creating game %s".formatted(playerName, game.getId()));
         return game;
     }
 
@@ -108,6 +111,10 @@ public class GameServiceImpl implements GameService {
         if(game.getPlayers().contains(player))
             throw new InternalException("Player with name %s already exists in game...".formatted(player.getName()));
         game.addPlayer(player);
+
+        System.out.println("-".repeat(300));
+        System.out.println("%s joining game %s".formatted(playerName, game.getId()));
+
         return game;
     }
 
@@ -117,6 +124,7 @@ public class GameServiceImpl implements GameService {
             if(game.getPlayers().size() == 4) {
                 game.setGameStatus(GameStatus.IN_PROGRESS);
                 game.getDeck().shuffleDeck();
+                game.setUpTeams();
                 game.deal();
                 System.out.println("-".repeat(300));
                 game.getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
@@ -129,5 +137,23 @@ public class GameServiceImpl implements GameService {
             throw new InternalException("Game %s is already in progress...".formatted(id));
         else
             throw new InternalException("Game %s is already finished...".formatted(id));
+    }
+
+    public Game getBonus(String playerName, List<Card> cards, UUID uuid) {
+        Game game = games.get(uuid);
+        Player player = new Player(playerName);
+
+        if(game == null)
+            throw new InternalException("Game UUID doesn't exist...");
+        if(!game.getPlayers().contains(player))
+            throw new InternalException("Player %s is not joined in the game...".formatted(player.getName()));
+        if(!player.equals(game.getTurn()))
+            throw new InternalException("Player %s is not on turn...".formatted(player.getName()));
+        if(!game.getPlayers().get(game.getPlayers().indexOf(player)).getHand().containsAll(cards))
+            throw new InternalException("Player %s doesn't have all selected cards[%s] in hand[%s]".formatted(player.getName(), cards,
+                    game.getPlayers().get(game.getPlayers().indexOf(player)).getHand()));
+
+        game.calculateBonus(cards);
+        return game;
     }
 }
