@@ -60,11 +60,4 @@ public class GameController {
                           @RequestBody Card card) {
         return gameService.throwCard(playerName, card, id);
     }
-
-    @PostMapping("/game/{id}/{playerName}/bonus")
-    public Game getBonus(@PathVariable UUID id,
-                          @PathVariable String playerName,
-                          @RequestBody List<Card> cards) {
-        return gameService.getBonus(playerName, cards, id);
-    }
 }

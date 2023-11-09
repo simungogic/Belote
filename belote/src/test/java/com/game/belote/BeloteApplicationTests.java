@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.game.belote.entity.Card;
 import com.game.belote.entity.Game;
+import com.game.belote.entity.Player;
 import com.game.belote.entity.Suit;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
@@ -138,37 +139,50 @@ class BeloteApplicationTests {
 
 	@Test
 	public void getBonusTest() throws JsonProcessingException {
-		LinkedList<String> playerNames = new LinkedList<>(List.of("Marko", "Nenad", "Igor", "Petar"));
-		Collections.shuffle(playerNames);
+		boolean flag = false;
+		while(!flag) {
+			System.out.println("-".repeat(300));
+			System.out.println("-".repeat(300));
+			System.out.println("NEW GAME...");
+			System.out.println("-".repeat(300));
+			LinkedList<String> playerNames = new LinkedList<>(List.of("Marko", "Nenad", "Igor", "Petar"));
+			Collections.shuffle(playerNames);
 
-		RequestSpecification request = RestAssured.given();
-		Response response;
-		JsonPath jsonPath;
+			RequestSpecification request = RestAssured.given();
+			Response response;
+			JsonPath jsonPath;
 
-		//creating game with first name from playerNames list
-		response = request.post("/%s".formatted(playerNames.get(0)));
-		//System.out.println(response.asString());
-		assertTrue(response.getStatusCode() == 200);
-		jsonPath = response.jsonPath();
-		String gameId = jsonPath.getString("id");
-
-		//joining rest of the players to game with game id
-		for(int i = 1; i < playerNames.size(); i++) {
-			response = request.post("/%s/%s".formatted(gameId, playerNames.get(i)));
+			//creating game with first name from playerNames list
+			response = request.post("/%s".formatted(playerNames.get(0)));
 			//System.out.println(response.asString());
 			assertTrue(response.getStatusCode() == 200);
+			jsonPath = response.jsonPath();
+			String gameId = jsonPath.getString("id");
+
+			//joining rest of the players to game with game id
+			for(int i = 1; i < playerNames.size(); i++) {
+				response = request.post("/%s/%s".formatted(gameId, playerNames.get(i)));
+				//System.out.println(response.asString());
+				assertTrue(response.getStatusCode() == 200);
+			}
+
+			//starting the game
+			response = request.post("/%s/start".formatted(gameId));
+			jsonPath = response.jsonPath();
+			//System.out.println(response.asString());
+			assertTrue(response.getStatusCode() == 200);
+
+			//randomly pick name and choose suit
+			Game game = randomlyChooseSuit(gameId, playerNames, jsonPath);
+
+			for(int i = 0; i < 4; i++) {
+				Player player = game.getPlayers().get(i);
+				Map<String, List<Card>> cards = game.calculateBonus(player.getName(), player.getHand());
+				if(!cards.isEmpty()) {
+					flag = true;
+					break;
+				}
+			}
 		}
-
-		//starting the game
-		response = request.post("/%s/start".formatted(gameId));
-		jsonPath = response.jsonPath();
-		//System.out.println(response.asString());
-		assertTrue(response.getStatusCode() == 200);
-
-		//randomly pick name and choose suit
-		Game game = randomlyChooseSuit(gameId, playerNames, jsonPath);
-
-		game.calculateBonus(game.getPlayers().get(0).getHand());
-
 	}
 }

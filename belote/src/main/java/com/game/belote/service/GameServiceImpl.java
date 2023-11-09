@@ -68,10 +68,6 @@ public class GameServiceImpl implements GameService {
         return game;
     }
 
-    private void calculateResult() {
-        System.out.println("Calculating result...");
-    }
-
     @Override
     public Game throwCard(String playerName, Card card, UUID uuid) {
         Game game = games.get(uuid);
@@ -126,6 +122,7 @@ public class GameServiceImpl implements GameService {
                 game.getDeck().shuffleDeck();
                 game.setUpTeams();
                 game.deal();
+                game.sortHandsByFaceAndSequence();
                 System.out.println("-".repeat(300));
                 game.getPlayers().forEach(p -> System.out.println("%s's hand: %s".formatted( p.getName(), p.getHand())));
                 return game;
@@ -137,23 +134,5 @@ public class GameServiceImpl implements GameService {
             throw new InternalException("Game %s is already in progress...".formatted(id));
         else
             throw new InternalException("Game %s is already finished...".formatted(id));
-    }
-
-    public Game getBonus(String playerName, List<Card> cards, UUID uuid) {
-        Game game = games.get(uuid);
-        Player player = new Player(playerName);
-
-        if(game == null)
-            throw new InternalException("Game UUID doesn't exist...");
-        if(!game.getPlayers().contains(player))
-            throw new InternalException("Player %s is not joined in the game...".formatted(player.getName()));
-        if(!player.equals(game.getTurn()))
-            throw new InternalException("Player %s is not on turn...".formatted(player.getName()));
-        if(!game.getPlayers().get(game.getPlayers().indexOf(player)).getHand().containsAll(cards))
-            throw new InternalException("Player %s doesn't have all selected cards[%s] in hand[%s]".formatted(player.getName(), cards,
-                    game.getPlayers().get(game.getPlayers().indexOf(player)).getHand()));
-
-        game.calculateBonus(cards);
-        return game;
     }
 }

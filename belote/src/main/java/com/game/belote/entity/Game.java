@@ -3,7 +3,6 @@ package com.game.belote.entity;
 import com.sun.jdi.InternalException;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -13,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
 
 @Component
@@ -32,17 +32,13 @@ public class Game {
     private List<Player> players;
 
     public Game() {
+        deck = new Deck();
         players = new ArrayList<>(4);
         gameStatus = GameStatus.NEW;
         id = UUID.randomUUID();
         rounds = new ArrayList<>(8);
         teams = new HashMap<>(2);
         teamSums = new HashMap<>(2);
-    }
-
-    @Autowired
-    public void setDeck(Deck deck) {
-        this.deck = deck;
     }
 
     public void setUpTeams() {
@@ -95,6 +91,10 @@ public class Game {
 
     public void resetTurn() {
         turn = players.indexOf(dealer) < 3 ? players.get(players.indexOf(dealer) + 1) : players.get(0);
+    }
+
+    public void sortHandsByFaceAndSequence() {
+        getPlayers().forEach(p -> p.getHand().sort(Comparator.comparing(Card::getSuit).thenComparing(Card::getSequence)));
     }
 
     public void deal() {
@@ -374,14 +374,48 @@ public class Game {
         return new Pair<>(roundWinnerPlayer, roundWinnerPoints);
     }
 
-    private Map<Face, Long> getFourOfKindBonusCards(List<Card> cards) {
+    private Map<String, List<Card>> getFourSameFaceBonusCards(String playerName, List<Card> cards) {
         //get four of kind cards(DEČKO, DEVET, AS, DESET, DAMA)
-        return cards.stream()
-                .collect(groupingBy(Card::getFace, Collectors.counting()));
+        Map<Face, Long> fourOfKindBonusCards = cards.stream()
+                .collect(collectingAndThen(groupingBy(Card::getFace, Collectors.counting()),
+                        m -> {
+                            m.values().removeIf(v -> v != 4);
+                            m.keySet().removeIf(k -> k.equals(Face.SEDAM)
+                                    || k.equals(Face.OSAM));
+                            return m;
+                }));
+
+        Map<String, List<Card>> descListFourSameFaceCards = new HashMap<>(2);
+        for(Face face : fourOfKindBonusCards.keySet()) {
+            String desc = switch (face) {
+                case DEVET -> "fourOfKindDevet";
+                case DEČKO -> "fourOfKindDecko";
+                case DAMA -> "fourOfKindDama";
+                case KRALJ -> "fourOfKindKralj";
+                case DESET -> "fourOfKindDeset";
+                case AS -> "fourOfKindAs";
+                default -> null;
+            };
+            List<Card> listFourOfKindCards = cards.stream()
+                    .filter(c -> c.getFace().equals(face))
+                    .toList();
+            descListFourSameFaceCards.put(desc, listFourOfKindCards);
+        }
+        System.out.println("-".repeat(300));
+        System.out.println("four of a kind...(%s)".formatted(playerName));
+        System.out.println(descListFourSameFaceCards.isEmpty() ? "empty" : descListFourSameFaceCards);
+        return descListFourSameFaceCards;
     }
 
-    public List<Card> calculateBonus(List<Card> cards) {
+    private Map<String, List<Card>> getSameSuitSequenceBonusCards(List<Card> cards) {
+        //nedovršeno
+        return null;
+    }
 
+    public Map<String, List<Card>> calculateBonus(String playerName, List<Card> cards) {
+        Map<String, List<Card>> fourSameFaceBonusCards = getFourSameFaceBonusCards(playerName, cards);
+        Map<String, List<Card>> sameSuitSequenceBonusCards = getSameSuitSequenceBonusCards(cards);
+        return fourSameFaceBonusCards;
     }
 
     @Override

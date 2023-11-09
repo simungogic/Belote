@@ -15,5 +15,4 @@ public interface GameService {
     Game passSuit(String playerName, UUID uuid);
     Game pickSuit(String playerName, String suit, UUID uuid);
     Game throwCard(String playerName, Card card, UUID uuid);
-    Game getBonus(String playerName, List<Card> cards, UUID uuid);
 }

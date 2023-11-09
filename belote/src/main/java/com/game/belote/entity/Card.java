@@ -11,6 +11,7 @@ public class Card implements Comparable<Card> {
     private boolean visible;
     private int value;
     private int rank;
+    private int sequence;
 
     public Card() {
     }
@@ -23,11 +24,26 @@ public class Card implements Comparable<Card> {
         this.suit = suit;
         this.face = face;
         this.visible = visible;
-        this.rank = generateRank(face);
-        this.value = generateValue(face);
+        this.rank = generateRank();
+        this.value = generateValue();
+        this.sequence = generateSequence();
     }
 
-    private int generateRank(Face face) {
+    private int generateSequence() {
+        switch (face) {
+            case SEDAM: return 1;
+            case OSAM: return 2;
+            case DEVET: return 3;
+            case DESET: return 4;
+            case DEČKO: return 5;
+            case DAMA: return 6;
+            case KRALJ: return 7;
+            case AS: return 8;
+            default: return 0;
+        }
+    }
+
+    private int generateRank() {
         switch (face) {
             case SEDAM: return 1;
             case OSAM: return 2;
@@ -41,7 +57,7 @@ public class Card implements Comparable<Card> {
         }
     }
 
-    private int generateValue(Face face) {
+    private int generateValue() {
         switch (face) {
             case SEDAM, OSAM, DEVET: return 0;
             case DEČKO: return 2;
@@ -55,7 +71,7 @@ public class Card implements Comparable<Card> {
 
     @Override
     public String toString() {
-        return "%s %s(r:%s)(v:%s)".formatted(suit.name(), face.name(), getRank(), getValue());
+        return "%s %s(r:%s)(v:%s)(s:%s)".formatted(suit.name(), face.name(), getRank(), getValue(), getSequence());
     }
 
     @Override
